@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="CacheFlow Studio - FIFO and LRU cache visualization dashboard">
+  <title>CacheFlow Studio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="CacheFlow Studio home">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </span>
+        <span>
+          <strong>CacheFlow</strong>
+          <small>Studio</small>
+        </span>
+      </a>
+      <div class="topbar-meta">
+        <span class="status-dot" id="connectionDot"></span>
+        <span id="connectionText">Ready</span>
+        <span class="version">COAL • v1.0</span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">CACHE MEMORY LAB</p>
+          <h1>See every cache decision as it happens.</h1>
+          <p class="hero-copy">Run FIFO or LRU, follow each CPU request, inspect replacements, and compare hit performance from one focused dashboard.</p>
+        </div>
+        <div class="hero-chip">
+          <span class="hero-chip-icon">↯</span>
+          <span><strong>Live engine</strong><small>Terminal + browser output</small></span>
+        </div>
+      </section>
+
+      <section class="control-panel card" aria-label="Simulation controls">
+        <div class="control-group policy-control">
+          <label>Replacement policy</label>
+          <div class="segmented" role="group" aria-label="Replacement policy">
+            <button class="segment active" type="button" data-policy="FIFO">FIFO</button>
+            <button class="segment" type="button" data-policy="LRU">LRU</button>
+          </div>
+        </div>
+
+        <div class="control-group range-control">
+          <div class="label-row">
+            <label for="accessCount">Memory requests</label>
+            <output id="accessOutput">30</output>
+          </div>
+          <input id="accessCount" type="range" min="5" max="100" step="5" value="30">
+        </div>
+
+        <div class="control-group">
+          <label for="speedSelect">Animation speed</label>
+          <select id="speedSelect">
+            <option value="900">Focused</option>
+            <option value="500" selected>Balanced</option>
+            <option value="250">Fast</option>
+            <option value="100">Instant</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="seedInput">Random seed <span>(optional)</span></label>
+          <input id="seedInput" type="number" placeholder="e.g. 42" inputmode="numeric">
+        </div>
+
+        <div class="control-actions">
+          <button class="button secondary" id="resetButton" type="button">Reset</button>
+          <button class="button primary" id="runButton" type="button">
+            <span class="play-icon">▶</span>
+            Run simulation
+          </button>
+        </div>
+      </section>
+
+      <section class="metric-grid" aria-label="Simulation metrics">
+        <article class="metric-card card">
+          <div class="metric-icon blue">↗</div>
+          <div><span>Hit ratio</span><strong id="ratioMetric">0.00%</strong></div>
+          <small id="ratioHint">Waiting for data</small>
+        </article>
+        <article class="metric-card card">
+          <div class="metric-icon cyan">✓</div>
+          <div><span>Cache hits</span><strong id="hitMetric">0</strong></div>
+          <small>Found without memory load</small>
+        </article>
+        <article class="metric-card card">
+          <div class="metric-icon amber">↓</div>
+          <div><span>Cache misses</span><strong id="missMetric">0</strong></div>
+          <small>Loaded from main memory</small>
+        </article>
+        <article class="metric-card card">
+          <div class="metric-icon navy">#</div>
+          <div><span>Processed</span><strong id="accessMetric">0 / 30</strong></div>
+          <small id="policyMetric">FIFO policy selected</small>
+        </article>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="visualizer card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">LIVE VISUALIZER</p>
+              <h2>Cache activity</h2>
+            </div>
+            <span class="run-state idle" id="runState"><span></span>Idle</span>
+          </div>
+
+          <div class="request-flow">
+            <div class="request-node cpu-node">
+              <span class="node-label">CPU REQUEST</span>
+              <strong id="requestValue">—</strong>
+              <small id="requestIndex">Memory index —</small>
+            </div>
+            <div class="flow-arrow" aria-hidden="true"><span></span>→</div>
+            <div class="cache-bank-wrap">
+              <div class="cache-bank-heading">
+                <span>L1 CACHE</span>
+                <small>5 lines</small>
+              </div>
+              <div class="cache-bank" id="cacheBank"></div>
+            </div>
+          </div>
+
+          <div class="result-banner neutral" id="resultBanner">
+            <span class="result-symbol">•</span>
+            <div><strong>Ready to simulate</strong><small>Select a policy and start the run.</small></div>
+          </div>
+
+          <div class="memory-section">
+            <div class="subheading">
+              <span>Main memory</span>
+              <small>20 addressable values</small>
+            </div>
+            <div class="memory-grid" id="memoryGrid"></div>
+          </div>
+        </article>
+
+        <aside class="insights-column">
+          <article class="performance-card card">
+            <div class="section-heading compact">
+              <div><p class="eyebrow">PERFORMANCE</p><h2>Hit / miss balance</h2></div>
+            </div>
+            <div class="donut-row">
+              <div class="donut" id="ratioDonut" style="--ratio: 0">
+                <div><strong id="donutValue">0%</strong><small>hit ratio</small></div>
+              </div>
+              <div class="legend">
+                <div><span class="legend-dot hit"></span><span>Hits</span><strong id="legendHits">0</strong></div>
+                <div><span class="legend-dot miss"></span><span>Misses</span><strong id="legendMisses">0</strong></div>
+              </div>
+            </div>
+            <div class="trend-wrap">
+              <div class="subheading"><span>Ratio trend</span><small>Per access</small></div>
+              <svg id="trendChart" viewBox="0 0 320 92" preserveAspectRatio="none" aria-label="Hit ratio trend chart">
+                <line x1="0" y1="90" x2="320" y2="90" class="chart-axis"></line>
+                <polyline id="trendLine" points="0,90" class="trend-line"></polyline>
+              </svg>
+            </div>
+          </article>
+
+          <article class="policy-card card">
+            <div class="policy-badge" id="policyBadge">FIFO</div>
+            <h3 id="policyTitle">First In, First Out</h3>
+            <p id="policyDescription">When the cache is full, the oldest inserted value is replaced first.</p>
+            <div class="policy-detail">
+              <span>Replacement rule</span>
+              <strong id="policyRule">Oldest insertion</strong>
+            </div>
+          </article>
+        </aside>
+      </section>
+
+      <section class="activity-card card">
+        <div class="section-heading">
+          <div><p class="eyebrow">EVENT LOG</p><h2>Request history</h2></div>
+          <button class="text-button" id="exportButton" type="button" disabled>Export JSON</button>
+        </div>
+        <div class="activity-table-wrap">
+          <table>
+            <thead><tr><th>Step</th><th>Memory request</th><th>Result</th><th>Cache line</th><th>Replacement</th><th>Cache snapshot</th></tr></thead>
+            <tbody id="activityBody">
+              <tr class="empty-row"><td colspan="6">Simulation events will appear here.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>CacheFlow Studio</span>
+      <span>Computer Organization &amp; Assembly Language Project</span>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
